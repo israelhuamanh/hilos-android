@@ -58,6 +58,7 @@ fun PantallaTareas(vm: TareasViewModel) {
     val primos by vm.primos.collectAsState()
     val carga by vm.carga.collectAsState()
     val simularError by vm.simularError.collectAsState()
+    val limitarTiempo by vm.limitarTiempo.collectAsState()
 
     var toques by rememberSaveable { mutableIntStateOf(0) }
     var textoHasta by rememberSaveable { mutableStateOf("500000") }
@@ -198,7 +199,7 @@ fun PantallaTareas(vm: TareasViewModel) {
                 }
             }
 
-            // Tarjeta 3: Dos cargas (Pasos 6 y 7)
+            // Tarjeta 3: Dos cargas (Pasos 6, 7 y Mejora 2: withTimeout)
             TarjetaSeccion(titulo = "Dos cargas") {
                 val cargando = carga is CargaUi.Cargando
 
@@ -214,6 +215,22 @@ fun PantallaTareas(vm: TareasViewModel) {
                     )
                     Text(
                         text = "Simular error",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Switch(
+                        checked = limitarTiempo,
+                        onCheckedChange = { vm.cambiarLimitarTiempo(it) },
+                        enabled = !cargando
+                    )
+                    Text(
+                        text = "Límite 2.5 s (withTimeout)",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }

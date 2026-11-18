@@ -8,12 +8,14 @@ import com.tecsup.centrotareas.model.CargaUi
 import com.tecsup.centrotareas.model.PrimosUi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
 
@@ -81,16 +83,25 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
         trabajoPrimos?.cancel()
     }
 
-    // ----- Dos cargas (pasos 6 y 7)
+    // ----- Dos cargas (pasos 6, 7 y Mejora 2: withTimeout)
     private val _carga = MutableStateFlow<CargaUi>(CargaUi.Inicial)
     val carga: StateFlow<CargaUi> = _carga.asStateFlow()
 
     private val _simularError = MutableStateFlow(false)
     val simularError: StateFlow<Boolean> = _simularError.asStateFlow()
 
+    private val _limitarTiempo = MutableStateFlow(false)
+    val limitarTiempo: StateFlow<Boolean> = _limitarTiempo.asStateFlow()
+
     fun cambiarSimularError(valor: Boolean) {
         _simularError.value = valor
     }
+
+    fun cambiarLimitarTiempo(valor: Boolean) {
+        _limitarTiempo.value = valor
+    }
+
+    private fun obtenerTimeoutMs(): Long = if (_limitarTiempo.value) 2500L else 6000L
 
     fun cargarUnaPorUna() {
         if (_carga.value is CargaUi.Cargando) return
@@ -98,8 +109,11 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
             _carga.value = CargaUi.Cargando
             val inicio = System.currentTimeMillis()
             try {
-                val perfil = repo.cargarPerfil()
-                val pedidos = repo.cargarPedidos(_simularError.value)
+                val (perfil, pedidos) = withTimeout(obtenerTimeoutMs()) {
+                    val p = repo.cargarPerfil()
+                    val ped = repo.cargarPedidos(_simularError.value)
+                    Pair(p, ped)
+                }
                 val ms = System.currentTimeMillis() - inicio
                 _carga.value = CargaUi.Exito(
                     modo = "Una por una",
@@ -107,6 +121,8 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
                     pedidos = pedidos.size,
                     milisegundos = ms
                 )
+            } catch (e: TimeoutCancellationException) {
+                _carga.value = CargaUi.Error("Tardó demasiado")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -123,10 +139,12 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
             _carga.value = CargaUi.Cargando
             val inicio = System.currentTimeMillis()
             try {
-                val (perfil, pedidos) = coroutineScope {
-                    val p = async { repo.cargarPerfil() }
-                    val ped = async { repo.cargarPedidos(_simularError.value) }
-                    Pair(p.await(), ped.await())
+                val (perfil, pedidos) = withTimeout(obtenerTimeoutMs()) {
+                    coroutineScope {
+                        val p = async { repo.cargarPerfil() }
+                        val ped = async { repo.cargarPedidos(_simularError.value) }
+                        Pair(p.await(), ped.await())
+                    }
                 }
                 val ms = System.currentTimeMillis() - inicio
                 _carga.value = CargaUi.Exito(
@@ -135,6 +153,8 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
                     pedidos = pedidos.size,
                     milisegundos = ms
                 )
+            } catch (e: TimeoutCancellationException) {
+                _carga.value = CargaUi.Error("Tardó demasiado")
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
