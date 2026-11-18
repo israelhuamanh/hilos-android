@@ -89,7 +89,7 @@ fun PantallaTareas(vm: TareasViewModel) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Tarjeta 1: Tarea con progreso (Pasos 1 a 4)
+            // Tarjeta 1: Tarea con progreso (Pasos 1 a 4 y Mejora 1)
             TarjetaSeccion(titulo = "Tarea con progreso") {
                 Button(onClick = { toques++ }) {
                     Text(text = "Tócame: $toques")
@@ -130,7 +130,7 @@ fun PantallaTareas(vm: TareasViewModel) {
                 )
             }
 
-            // Tarjeta 2: Contar números primos (Paso 5)
+            // Tarjeta 2: Contar números primos (Paso 5 y Mejora 3)
             TarjetaSeccion(titulo = "Contar números primos") {
                 val calculandoPrimos = primos is PrimosUi.Calculando
 
@@ -172,7 +172,14 @@ fun PantallaTareas(vm: TareasViewModel) {
                 when (val estado = primos) {
                     is PrimosUi.Inicial -> Unit
                     is PrimosUi.Calculando -> {
-                        CircularProgressIndicator()
+                        LinearProgressIndicator(
+                            progress = { estado.progreso },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Text(
+                            text = "Calculando... ${(estado.progreso * 100).toInt()} %",
+                            style = MaterialTheme.typography.labelLarge
+                        )
                     }
                     is PrimosUi.Listo -> {
                         RecuadroExito {
