@@ -77,8 +77,8 @@ fun PantallaTareas(vm: TareasViewModel) {
                     Text(text = "Tócame: $toques")
                 }
 
-                Button(onClick = { vm.tareaLargaMala() }) {
-                    Text(text = "Tarea larga (MAL)")
+                Button(onClick = { vm.tareaLarga() }) {
+                    Text(text = "Tarea larga")
                 }
 
                 Text(
