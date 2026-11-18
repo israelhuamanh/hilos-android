@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.tecsup.centrotareas.model.CargaUi
 import com.tecsup.centrotareas.model.PrimosUi
 import com.tecsup.centrotareas.ui.theme.CardSurfaceWhite
 import com.tecsup.centrotareas.ui.theme.ErrorRedBg
@@ -197,12 +198,62 @@ fun PantallaTareas(vm: TareasViewModel) {
 
             // Tarjeta 3: Dos cargas (Pasos 6 y 7)
             TarjetaSeccion(titulo = "Dos cargas") {
-                // TODO Paso 6: botones Una por una y A la vez, y estado CargaUi
-                // TODO Paso 7: Switch Simular error y botón Reintentar
-                Text(
-                    text = "Estado: ${carga::class.simpleName}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                val cargando = carga is CargaUi.Cargando
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = { vm.cargarUnaPorUna() },
+                        enabled = !cargando
+                    ) {
+                        Text(text = "Una por una")
+                    }
+
+                    Button(
+                        onClick = { vm.cargarALaVez() },
+                        enabled = !cargando
+                    ) {
+                        Text(text = "A la vez")
+                    }
+                }
+
+                when (val estado = carga) {
+                    is CargaUi.Inicial -> Unit
+                    is CargaUi.Cargando -> {
+                        CircularProgressIndicator()
+                    }
+                    is CargaUi.Exito -> {
+                        RecuadroExito {
+                            Text(
+                                text = "Modo: ${estado.modo}",
+                                color = SuccessGreenText,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = "Perfil: ${estado.perfil}",
+                                color = SuccessGreenText,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "Pedidos: ${estado.pedidos}",
+                                color = SuccessGreenText,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = "Tiempo: ${estado.milisegundos} ms",
+                                color = SuccessGreenText,
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                    is CargaUi.Error -> {
+                        // TODO Paso 7: RecuadroError y botón Reintentar
+                    }
+                }
             }
         }
     }
