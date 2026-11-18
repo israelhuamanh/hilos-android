@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -20,6 +21,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +43,8 @@ fun PantallaTareas(vm: TareasViewModel) {
     val mensaje by vm.mensaje.collectAsState()
     val primos by vm.primos.collectAsState()
     val carga by vm.carga.collectAsState()
+
+    var toques by rememberSaveable { mutableIntStateOf(0) }
 
     Scaffold(
         topBar = {
@@ -67,10 +73,14 @@ fun PantallaTareas(vm: TareasViewModel) {
         ) {
             // Tarjeta 1: Tarea con progreso (Pasos 1 a 4)
             TarjetaSeccion(titulo = "Tarea con progreso") {
-                // TODO Paso 1: botón Tócame y botón Tarea larga (MAL)
-                // TODO Paso 2: botón Tarea larga con corrutina
-                // TODO Paso 3: barra de progreso y porcentaje
-                // TODO Paso 4: botones Iniciar y Cancelar
+                Button(onClick = { toques++ }) {
+                    Text(text = "Tócame: $toques")
+                }
+
+                Button(onClick = { vm.tareaLargaMala() }) {
+                    Text(text = "Tarea larga (MAL)")
+                }
+
                 Text(
                     text = mensaje,
                     style = MaterialTheme.typography.bodyMedium
