@@ -9,14 +9,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -25,12 +28,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.tecsup.centrotareas.model.PrimosUi
 import com.tecsup.centrotareas.ui.theme.CardSurfaceWhite
 import com.tecsup.centrotareas.ui.theme.ErrorRedBg
 import com.tecsup.centrotareas.ui.theme.ErrorRedBorder
@@ -38,6 +44,7 @@ import com.tecsup.centrotareas.ui.theme.ErrorRedText
 import com.tecsup.centrotareas.ui.theme.OutlineLight
 import com.tecsup.centrotareas.ui.theme.SuccessGreenBg
 import com.tecsup.centrotareas.ui.theme.SuccessGreenBorder
+import com.tecsup.centrotareas.ui.theme.SuccessGreenText
 import com.tecsup.centrotareas.viewmodel.TareasViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,6 +57,8 @@ fun PantallaTareas(vm: TareasViewModel) {
     val carga by vm.carga.collectAsState()
 
     var toques by rememberSaveable { mutableIntStateOf(0) }
+    var textoHasta by rememberSaveable { mutableStateOf("500000") }
+    var ultimoN by rememberSaveable { mutableIntStateOf(500000) }
 
     Scaffold(
         topBar = {
@@ -119,11 +128,71 @@ fun PantallaTareas(vm: TareasViewModel) {
 
             // Tarjeta 2: Contar números primos (Paso 5)
             TarjetaSeccion(titulo = "Contar números primos") {
-                // TODO Paso 5: campo numérico, botones Contar y Cancelar, y estado PrimosUi
-                Text(
-                    text = "Estado: ${primos::class.simpleName}",
-                    style = MaterialTheme.typography.bodyMedium
+                val calculandoPrimos = primos is PrimosUi.Calculando
+
+                OutlinedTextField(
+                    value = textoHasta,
+                    onValueChange = { textoHasta = it },
+                    label = { Text("Hasta el número") },
+                    singleLine = true,
+                    enabled = !calculandoPrimos,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
                 )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = {
+                            val n = textoHasta.trim().toIntOrNull()
+                            if (n != null && n >= 2) {
+                                ultimoN = n
+                                vm.contar(n)
+                            }
+                        },
+                        enabled = !calculandoPrimos
+                    ) {
+                        Text(text = "Contar")
+                    }
+
+                    OutlinedButton(
+                        onClick = { vm.cancelarPrimos() },
+                        enabled = calculandoPrimos
+                    ) {
+                        Text(text = "Cancelar")
+                    }
+                }
+
+                when (val estado = primos) {
+                    is PrimosUi.Inicial -> Unit
+                    is PrimosUi.Calculando -> {
+                        CircularProgressIndicator()
+                    }
+                    is PrimosUi.Listo -> {
+                        RecuadroExito {
+                            Text(
+                                text = "Primos hasta $ultimoN: ${estado.cantidad}",
+                                color = SuccessGreenText,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = "Tiempo: ${estado.milisegundos} ms",
+                                color = SuccessGreenText,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                    is PrimosUi.Cancelado -> {
+                        Text(
+                            text = "Cancelado",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
 
             // Tarjeta 3: Dos cargas (Pasos 6 y 7)
