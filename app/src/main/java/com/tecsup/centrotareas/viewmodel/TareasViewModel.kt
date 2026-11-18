@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tecsup.centrotareas.data.TareasRepository
 import com.tecsup.centrotareas.model.CargaUi
+import com.tecsup.centrotareas.model.ComparacionTiempos
 import com.tecsup.centrotareas.model.PrimosUi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -12,8 +13,10 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
@@ -30,6 +33,21 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
     val corriendo: StateFlow<Boolean> = _corriendo.asStateFlow()
 
     private var trabajo: Job? = null
+
+    // ----- Mejora 4: Historial y comparación de tiempos desde DataStore (Repository)
+    val historial: StateFlow<List<String>> = repo.observarHistorial()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val comparacionTiempos: StateFlow<ComparacionTiempos> = repo.observarComparacionTiempos()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ComparacionTiempos()
+        )
 
     fun tareaLarga() {
         if (_corriendo.value) return
@@ -76,6 +94,9 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
                             cantidad = avance.cantidadActual,
                             milisegundos = ms
                         )
+                        repo.guardarResultadoHistorial(
+                            "Primos hasta $hasta: ${avance.cantidadActual} (${ms} ms)"
+                        )
                     } else {
                         _primos.value = PrimosUi.Calculando(progreso = avance.progreso)
                     }
@@ -91,7 +112,7 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
         trabajoPrimos?.cancel()
     }
 
-    // ----- Dos cargas (pasos 6, 7 y Mejora 2: withTimeout)
+    // ----- Dos cargas (pasos 6, 7, Mejora 2: withTimeout y Mejora 4: comparación)
     private val _carga = MutableStateFlow<CargaUi>(CargaUi.Inicial)
     val carga: StateFlow<CargaUi> = _carga.asStateFlow()
 
@@ -129,6 +150,10 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
                     pedidos = pedidos.size,
                     milisegundos = ms
                 )
+                repo.guardarTiempoCarga(modo = "Una por una", milisegundos = ms)
+                repo.guardarResultadoHistorial(
+                    "Carga [Una por una]: ${pedidos.size} pedidos (${ms} ms)"
+                )
             } catch (e: TimeoutCancellationException) {
                 _carga.value = CargaUi.Error("Tardó demasiado")
             } catch (e: CancellationException) {
@@ -161,6 +186,10 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
                     pedidos = pedidos.size,
                     milisegundos = ms
                 )
+                repo.guardarTiempoCarga(modo = "A la vez", milisegundos = ms)
+                repo.guardarResultadoHistorial(
+                    "Carga [A la vez]: ${pedidos.size} pedidos (${ms} ms)"
+                )
             } catch (e: TimeoutCancellationException) {
                 _carga.value = CargaUi.Error("Tardó demasiado")
             } catch (e: CancellationException) {
@@ -170,6 +199,12 @@ class TareasViewModel(private val repo: TareasRepository) : ViewModel() {
                     "No se pudo cargar: ${e.message ?: "Error desconocido"}"
                 )
             }
+        }
+    }
+
+    fun limpiarHistorial() {
+        viewModelScope.launch {
+            repo.limpiarHistorial()
         }
     }
 }

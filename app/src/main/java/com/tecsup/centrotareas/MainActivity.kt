@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val factory = TareasViewModelFactory()
+        val factory = TareasViewModelFactory(applicationContext)
         setContent {
             CentroTareasTheme {
                 val vm: TareasViewModel = viewModel(factory = factory)

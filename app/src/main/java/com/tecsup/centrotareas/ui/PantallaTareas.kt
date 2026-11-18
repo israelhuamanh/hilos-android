@@ -16,6 +16,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -38,12 +39,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.tecsup.centrotareas.model.CargaUi
+import com.tecsup.centrotareas.model.ComparacionTiempos
 import com.tecsup.centrotareas.model.PrimosUi
 import com.tecsup.centrotareas.ui.theme.CardSurfaceWhite
 import com.tecsup.centrotareas.ui.theme.ErrorRedBg
 import com.tecsup.centrotareas.ui.theme.ErrorRedBorder
 import com.tecsup.centrotareas.ui.theme.ErrorRedText
 import com.tecsup.centrotareas.ui.theme.OutlineLight
+import com.tecsup.centrotareas.ui.theme.PrimaryContainerBlue
 import com.tecsup.centrotareas.ui.theme.SuccessGreenBg
 import com.tecsup.centrotareas.ui.theme.SuccessGreenBorder
 import com.tecsup.centrotareas.ui.theme.SuccessGreenText
@@ -59,6 +62,8 @@ fun PantallaTareas(vm: TareasViewModel) {
     val carga by vm.carga.collectAsState()
     val simularError by vm.simularError.collectAsState()
     val limitarTiempo by vm.limitarTiempo.collectAsState()
+    val comparacionTiempos by vm.comparacionTiempos.collectAsState()
+    val historial by vm.historial.collectAsState()
 
     var toques by rememberSaveable { mutableIntStateOf(0) }
     var textoHasta by rememberSaveable { mutableStateOf("500000") }
@@ -206,7 +211,7 @@ fun PantallaTareas(vm: TareasViewModel) {
                 }
             }
 
-            // Tarjeta 3: Dos cargas (Pasos 6, 7 y Mejora 2: withTimeout)
+            // Tarjeta 3: Dos cargas (Pasos 6, 7, Mejora 2 y Mejora 4)
             TarjetaSeccion(titulo = "Dos cargas") {
                 val cargando = carga is CargaUi.Cargando
 
@@ -299,6 +304,107 @@ fun PantallaTareas(vm: TareasViewModel) {
                         }
                     }
                 }
+
+                BloqueComparacionTiempos(comparacion = comparacionTiempos)
+            }
+
+            // Tarjeta 4 (Mejora 4): Historial persistente de los últimos 5 resultados (DataStore)
+            TarjetaSeccion(titulo = "Historial reciente (DataStore)") {
+                if (historial.isEmpty()) {
+                    Text(
+                        text = "Aún no hay resultados guardados.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        historial.forEachIndexed { index, item ->
+                            Text(
+                                text = "${index + 1}. $item",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            if (index < historial.lastIndex) {
+                                HorizontalDivider(color = OutlineLight)
+                            }
+                        }
+                    }
+
+                    OutlinedButton(onClick = { vm.limpiarHistorial() }) {
+                        Text(text = "Limpiar historial")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BloqueComparacionTiempos(
+    comparacion: ComparacionTiempos
+) {
+    if (comparacion.unaPorUnaMs == null && comparacion.aLaVezMs == null) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = PrimaryContainerBlue.copy(alpha = 0.45f)
+        ),
+        border = BorderStroke(1.dp, OutlineLight)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = "Comparación de tiempos",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Una por una",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = comparacion.unaPorUnaMs?.let { "$it ms" } ?: "—",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "A la vez (async)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = comparacion.aLaVezMs?.let { "$it ms" } ?: "—",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            val ahorroMs = comparacion.ahorroMs
+            val ahorroPct = comparacion.ahorroPorcentaje
+            if (ahorroMs != null && ahorroPct != null) {
+                Text(
+                    text = "Ahorro en paralelo: $ahorroMs ms ($ahorroPct % más rápido)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
