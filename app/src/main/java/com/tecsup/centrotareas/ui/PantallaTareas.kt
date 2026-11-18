@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,6 +16,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -43,6 +45,7 @@ import com.tecsup.centrotareas.viewmodel.TareasViewModel
 fun PantallaTareas(vm: TareasViewModel) {
     val mensaje by vm.mensaje.collectAsState()
     val progreso by vm.progreso.collectAsState()
+    val corriendo by vm.corriendo.collectAsState()
     val primos by vm.primos.collectAsState()
     val carga by vm.carga.collectAsState()
 
@@ -79,8 +82,23 @@ fun PantallaTareas(vm: TareasViewModel) {
                     Text(text = "Tócame: $toques")
                 }
 
-                Button(onClick = { vm.tareaLarga() }) {
-                    Text(text = "Iniciar")
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = { vm.tareaLarga() },
+                        enabled = !corriendo
+                    ) {
+                        Text(text = "Iniciar")
+                    }
+
+                    OutlinedButton(
+                        onClick = { vm.cancelar() },
+                        enabled = corriendo
+                    ) {
+                        Text(text = "Cancelar")
+                    }
                 }
 
                 LinearProgressIndicator(
