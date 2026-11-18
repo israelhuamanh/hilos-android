@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -56,6 +57,7 @@ fun PantallaTareas(vm: TareasViewModel) {
     val corriendo by vm.corriendo.collectAsState()
     val primos by vm.primos.collectAsState()
     val carga by vm.carga.collectAsState()
+    val simularError by vm.simularError.collectAsState()
 
     var toques by rememberSaveable { mutableIntStateOf(0) }
     var textoHasta by rememberSaveable { mutableStateOf("500000") }
@@ -201,6 +203,22 @@ fun PantallaTareas(vm: TareasViewModel) {
                 val cargando = carga is CargaUi.Cargando
 
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Switch(
+                        checked = simularError,
+                        onCheckedChange = { vm.cambiarSimularError(it) },
+                        enabled = !cargando
+                    )
+                    Text(
+                        text = "Simular error",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                Row(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -251,7 +269,10 @@ fun PantallaTareas(vm: TareasViewModel) {
                         }
                     }
                     is CargaUi.Error -> {
-                        // TODO Paso 7: RecuadroError y botón Reintentar
+                        RecuadroError(mensaje = estado.mensaje)
+                        OutlinedButton(onClick = { vm.cargarALaVez() }) {
+                            Text(text = "Reintentar")
+                        }
                     }
                 }
             }
