@@ -13,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -41,6 +42,7 @@ import com.tecsup.centrotareas.viewmodel.TareasViewModel
 @Composable
 fun PantallaTareas(vm: TareasViewModel) {
     val mensaje by vm.mensaje.collectAsState()
+    val progreso by vm.progreso.collectAsState()
     val primos by vm.primos.collectAsState()
     val carga by vm.carga.collectAsState()
 
@@ -78,8 +80,18 @@ fun PantallaTareas(vm: TareasViewModel) {
                 }
 
                 Button(onClick = { vm.tareaLarga() }) {
-                    Text(text = "Tarea larga")
+                    Text(text = "Iniciar")
                 }
+
+                LinearProgressIndicator(
+                    progress = { progreso },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Text(
+                    text = "${(progreso * 100).toInt()} %",
+                    style = MaterialTheme.typography.labelLarge
+                )
 
                 Text(
                     text = mensaje,
